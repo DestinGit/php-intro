@@ -6,3 +6,4 @@
     <meta name="viewport" content="initial-scale=1.0">
 </head>
 <body>
+<?php require ROOT_PATH . "/fragments/nav.php"?>

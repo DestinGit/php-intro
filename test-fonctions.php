@@ -1,4 +1,5 @@
 <?php
+    require "config.php";
     require "html-tools.php";
 
     $pageTitle = "Ma page";
