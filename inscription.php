@@ -1,7 +1,7 @@
-<?php
-include_once "fonctions_utils.php";
+<?php session_start(); // démarrage de la session
 
-//var_dump($_POST);
+include_once "fonctions_utils.php";
+require  'model/memberModel.php';
 
 //Récupération des données
 $email = filter_input(INPUT_POST, "email", FILTER_VALIDATE_EMAIL);
@@ -16,6 +16,7 @@ $message = "";
 $estSoumis = isset($submit);
 
 //Si le formulaire est posté
+
 if($estSoumis){
     //Validation des données
     if(! $email){
@@ -29,35 +30,59 @@ if($estSoumis){
     }
 
     //Traitement des données
-    if(count($erreurs) == 0){
+    if(count($erreurs) == 0) {
         $message = "Votre inscription est confirmée";
 
         // traitement de l'upload
-        if(isset($_FILES["photo"])) {
+        if(isset($_FILES["photo"]) && strlen($_FILES["photo"]["name"]) > 0) {
             $mimeType = $_FILES["photo"]["type"];
             if($mimeType == "image/jpeg") {
-                $message .= uploadFile($_FILES["photo"]);
+                $nomImage = uniqid('image_').'.jpg';
+                $message .= uploadFile($_FILES["photo"], $nomImage);
             } else {
                 $erreurs[] = "Vous ne pouvez charger que des fichiers jpeg";
             }
+        }
+
+        if(count($erreurs) == 0) {
+            // persitance des données avec un fichier JSON
+
+            // Récupération de la liste des membres
+            $membres = json_decode(file_get_contents("data/membres.json"), true);
+
+            $found = memberFound($email);
+
+            if (!$found) {
+                // Création d'un nouveau membre
+                createNewMember($email, $mdp, $nomImage, $membres, $message);
+            } else {
+                $erreurs[] = "il existe déjà un membre avec cette adresse email";
+            }
+
+
         }
         //TODO enregistrer l'inscription dans un fichier ou une base de données
     }
 }
 
-function uploadFile($upload) {
-    $ext = 'jpg';
+/**
+ * @param $upload
+ * @param $nomImage
+ * @return string
+ */
+function uploadFile($upload, $nomImage) {
     $message = "fichier uploadé";
 
     $targetPath = getcwd().'/images/';
     //Attribution d'un nom unique au fichier
-    $filePath = $targetPath.uniqid('image_').'.'.$ext;
+    $filePath = $targetPath.$nomImage;
     if (!move_uploaded_file($upload['tmp_name'], $filePath)) {
         $message = "Aucun fichier uploadé";
     }
 
     return "<br> $message";
 }
+
 ?>
 
 <!doctype html>
@@ -73,7 +98,6 @@ function uploadFile($upload) {
 <body>
 
 <div>
-    <?=$message?>
 </div>
 
 <!-- Affichage des erreurs -->
